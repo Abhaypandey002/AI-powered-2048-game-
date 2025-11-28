@@ -1,0 +1,8 @@
+numpy
+torch
+tqdm
+pillow
+opencv-python
+pytesseract
+pyautogui
+pydantic
