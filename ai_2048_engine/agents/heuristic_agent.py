@@ -5,49 +5,47 @@ import math
 import random
 from typing import List
 
-import numpy as np
-
 from ai_2048_engine.agents import BaseAgent
 from ai_2048_engine.env.game_2048_env import Game2048Env
 from ai_2048_engine.env.utils import apply_move
 
-CORNER_POSITIONS = [(0, 0), (0, 3), (3, 0), (3, 3)]
+
+Corner_positions = [(0, 0), (0, 3), (3, 0), (3, 3)]
 
 
-def evaluate_board(board: np.ndarray) -> float:
+def evaluate_board(board: List[List[int]]) -> float:
     """Compute a heuristic score for the given board."""
-    empty_cells = np.count_nonzero(board == 0)
+    empty_cells = sum(1 for row in board for val in row if val == 0)
     smoothness = _calculate_smoothness(board)
     monotonicity = _calculate_monotonicity(board)
-    max_tile = int(board.max(initial=0))
-    corner_bonus = 1.5 if any(board[i, j] == max_tile for i, j in CORNER_POSITIONS) else 1.0
+    max_tile = max(max(row) for row in board) if board else 0
+    corner_bonus = 1.5 if any(board[i][j] == max_tile for i, j in Corner_positions) else 1.0
     score = 2.0 * empty_cells + 1.0 * monotonicity - 0.1 * smoothness
     if max_tile > 0:
         score += corner_bonus * math.log2(max_tile)
     return score
 
 
-def _calculate_smoothness(board: np.ndarray) -> float:
+def _calculate_smoothness(board: List[List[int]]) -> float:
     diff = 0.0
     for i in range(4):
         for j in range(4):
-            if board[i, j] == 0:
+            if board[i][j] == 0:
                 continue
-            current = math.log2(board[i, j])
             for dx, dy in ((1, 0), (0, 1)):
                 nx, ny = i + dx, j + dy
-                if 0 <= nx < 4 and 0 <= ny < 4 and board[nx, ny] != 0:
-                    diff += abs(current - math.log2(board[nx, ny]))
+                if 0 <= nx < 4 and 0 <= ny < 4 and board[nx][ny] != 0:
+                    diff += abs(math.log2(board[i][j]) - math.log2(board[nx][ny]))
     return diff
 
 
-def _calculate_monotonicity(board: np.ndarray) -> float:
+def _calculate_monotonicity(board: List[List[int]]) -> float:
     score = 0.0
     for i in range(4):
-        row = [val for val in board[i, :] if val != 0]
+        row = [val for val in board[i] if val != 0]
         score += _line_monotonicity(row)
     for j in range(4):
-        col = [val for val in board[:, j] if val != 0]
+        col = [board[i][j] for i in range(4) if board[i][j] != 0]
         score += _line_monotonicity(col)
     return score
 
@@ -69,7 +67,7 @@ class HeuristicAgent(BaseAgent):
 
     def select_action(self, env: Game2048Env) -> int:
         best_score = -float("inf")
-        best_action: int | None = None
+        best_action = None
         for action in (0, 1, 2, 3):
             new_board, moved, reward = apply_move(env.board, action)
             if not moved:

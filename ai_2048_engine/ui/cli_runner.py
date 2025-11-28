@@ -1,4 +1,4 @@
-"""Command-line interface for interacting with the 2048 AI engine."""
+"""Command-line interface for interacting with 2048 AI agents."""
 from __future__ import annotations
 
 import argparse
@@ -21,7 +21,6 @@ AGENT_BUILDERS = {
 
 
 def play(agent_name: str, episodes: int, render: bool) -> None:
-    """Play games with the selected agent."""
     agent = AGENT_BUILDERS[agent_name]()
     env = Game2048Env()
     for episode in range(episodes):
@@ -32,12 +31,11 @@ def play(agent_name: str, episodes: int, render: bool) -> None:
             _, _, done, info = env.step(action)
             if render:
                 env.render()
-        max_tile = int(env.board.max(initial=0))
+        max_tile = max(max(row) for row in env.board)
         print(f"Episode {episode + 1} finished with score {info['score']} and max tile {max_tile}")
 
 
 def eval_agent(agent_name: str, episodes: int) -> None:
-    """Evaluate an agent and print results."""
     agent = AGENT_BUILDERS[agent_name]()
     results = evaluate_agent(agent, num_episodes=episodes)
     print("Evaluation results:", results)
@@ -60,7 +58,6 @@ def build_parser() -> argparse.ArgumentParser:
         default="checkpoints/dqn_2048.pt",
         help="Path to save the trained checkpoint",
     )
-    train_parser.add_argument("--device", type=str, default="cpu", help="Compute device for training")
 
     eval_parser = subparsers.add_parser("eval", help="Evaluate an agent")
     eval_parser.add_argument("--agent", choices=list(AGENT_BUILDERS.keys()), default="heuristic")
@@ -75,7 +72,7 @@ def main() -> None:
     if args.command == "play":
         play(args.agent, args.episodes, args.render)
     elif args.command == "train-dqn":
-        train_dqn(num_episodes=args.episodes, checkpoint_path=args.checkpoint_path, device=args.device)
+        train_dqn(num_episodes=args.episodes, checkpoint_path=args.checkpoint_path)
     elif args.command == "eval":
         eval_agent(args.agent, args.episodes)
 
